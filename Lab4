@@ -1,0 +1,56 @@
+--4.1
+/* n, because we still have VA records */
+
+--4.2
+/* no, because 80 is not a valid fisp*/
+
+--4.3
+/* pretty good */
+
+
+--4.6
+-- Step 1 and 2: Find the most recent year in the income table and retrieve state with highest income in recent years
+WITH max_year_cte AS (
+    SELECT MAX(year) AS max_year
+    FROM income
+)
+SELECT 
+    n.name, i.income, i.year
+FROM 
+    income i
+JOIN 
+    max_year_cte my ON i.year = my.max_year
+JOIN 
+    name n ON i.fips = n.fips
+ORDER BY 
+    i.income DESC
+LIMIT 1;
+/* it works */
+
+
+--4.7
+
+WITH pop_va AS (
+    SELECT 
+        p.year, p.pop 
+    FROM 
+        population p
+    JOIN 
+        name n ON p.fips = n.fips
+    WHERE 
+        n.name = 'Virginia' 
+        AND p.year IN (
+            (SELECT MAX(year) FROM population), 
+            (SELECT MAX(year) - 5 FROM population)
+        )
+)
+SELECT 
+    ( 
+        (SELECT pop FROM pop_va WHERE year = (SELECT MAX(year) FROM population)) -
+        (SELECT pop FROM pop_va WHERE year = (SELECT MAX(year) - 5 FROM population))
+    )::float / 
+    (SELECT pop FROM pop_va WHERE year = (SELECT MAX(year) - 5 FROM population)) * 100 AS growth_rate;
+
+/* Result: 2.51288419126456, so it works pretty well */
+
+
